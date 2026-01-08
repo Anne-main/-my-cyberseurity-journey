@@ -4,9 +4,6 @@ This repository contains my personal learning notes and hands-on practice
 with Nmap, focusing on host discovery, port scanning, and service enumeration
 from an ethical hacking perspective.
 
-These notes are based on practical testing, documentation, and controlled labs.
-No unauthorized scanning is performed.
-
 ## Topics Covered
 - Host discovery (ICMP, ARP, TCP probes)
 - Port scanning techniques
