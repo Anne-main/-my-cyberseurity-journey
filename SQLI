@@ -1,0 +1,264 @@
+## 🔐 SQL Injection – Authentication Bypass (Burp Suite)
+
+### 📌 Objective
+
+Exploit a SQL injection vulnerability in a login function to bypass authentication and gain access as another user (administrator).
+
+---
+
+### 🧠 Key Concept 
+
+The application directly inserts user input into a SQL query without proper validation. By modifying the **request before it reaches the server**, we can change the logic of the SQL query and bypass the password check.
+
+---
+
+### 🛠 Tools Used
+
+* Burp Suite (Proxy & Repeater)
+* Browser (configured to proxy through Burp)
+
+---
+
+### 🔍 Vulnerability Type
+
+* **SQL Injection (Authentication Bypass)**
+* Impact: Login without knowing a valid password
+
+---
+
+### 📄 Vulnerable Query (Conceptual)
+
+```sql
+SELECT * FROM users
+WHERE username = 'USER_INPUT'
+AND password = 'PASS_INPUT';
+```
+
+User input is concatenated directly into the SQL query.
+
+---
+
+### 📡 Request Interception
+
+1. Enable **Intercept ON** in Burp Proxy
+2. Submit the login form with any credentials
+3. Capture the login request
+4. Send the request to **Repeater**
+
+---
+
+### ⚠️ CSRF Protection Handling
+
+* The login request includes a **CSRF token**
+* The token must:
+
+  * Be fresh
+  * Not be modified
+  * Be sent only once (single-use in some labs)
+
+Example parameter structure:
+
+```
+csrf=TOKEN&username=test&password=test
+```
+
+---
+
+### 💉 Injection Strategy
+
+**Priority injection point:** `username` parameter
+
+Constraints discovered:
+
+* Spaces were not allowed
+* Modifying or removing CSRF caused request rejection
+
+---
+
+### ✅ Final Working Payload (No Spaces)
+
+Injected into the `username` parameter:
+
+```
+administrator'--
+```
+
+Final request body:
+
+```
+csrf=VALIDTOKEN&username=administrator'--&password=anything
+```
+
+---
+
+### 🧪 Why This Works
+
+* `'` closes the string context
+* `--` comments out the rest of the SQL query
+* Password check is ignored
+
+Resulting logic:
+
+```sql
+WHERE username = 'administrator'--'
+AND password = 'anything'
+```
+
+The password condition is never evaluated.
+
+---
+
+### 📬 Server Response
+
+* **HTTP Status Code:** `302 Found`
+* **Location Header:** Redirect to administrator account
+
+A 302 redirect in a login flow indicates **successful authentication**.
+
+---
+
+### 🏁 Outcome
+
+* Authentication bypassed
+* Logged in as administrator
+* Vulnerability successfully exploited
+
+---
+
+### 🧠 Key Takeaways
+
+* SQL injection often requires adapting to input validation constraints
+* CSRF tokens must be preserved during testing
+* A 302 redirect can indicate success even without visible UI feedback
+* Burp Repeater is essential for controlled request testing
+
+---
+
+### 📚 Skills Practiced
+
+* Request interception and modification
+* Handling CSRF-protected endpoints
+* SQL injection payload crafting
+* Reading and interpreting HTTP responses
+
+---
+
+### 🧩 Mitigation (Defensive Note)
+
+* Use prepared statements / parameterized queries
+* Validate and sanitize all user input
+* Avoid revealing detailed error messages
+* Implement proper authentication controls
+
+---
+
+
+---
+
+## 🔎 SQL Injection – Search / Filter Function (Burp Suite)
+
+### 📌 Objective
+
+Exploit a SQL injection vulnerability in a search or filter parameter to bypass filtering logic and retrieve unintended results.
+
+---
+
+### 🧠 Key Concept (Plain English)
+
+The application uses user input from a **search or category filter** directly inside a SQL query. By modifying this input, we can change the logic of the query so that it always evaluates to true.
+
+---
+
+### 🔍 Vulnerability Type
+
+* **SQL Injection (Boolean-based)**
+* Impact: Bypass filters and return all results
+
+---
+
+### 📄 Vulnerable Query (Conceptual)
+
+```sql
+SELECT * FROM products
+WHERE category = 'USER_INPUT';
+```
+
+The input is not properly sanitized before being added to the SQL query.
+
+---
+
+### 📡 Request Identification
+
+The vulnerable parameter was found in a **GET request**:
+
+```
+GET /filter?category=food HTTP/1.1
+```
+
+---
+
+### 🛠 Testing Method
+
+1. Configure browser to proxy through **Burp Suite**
+2. Intercept the request using **Proxy**
+3. Send the request to **Repeater**
+4. Modify only the vulnerable parameter value
+
+---
+
+### 💉 Injection Payload
+
+```
+' OR 1=1 --
+```
+
+Final injected request:
+
+```
+GET /filter?category=food' OR 1=1 -- HTTP/1.1
+```
+
+(Spaces were allowed in this lab)
+
+---
+
+### 🧪 Why This Works
+
+* `'` closes the original string
+* `OR 1=1` is always true
+* `--` comments out the rest of the SQL query
+
+Resulting logic:
+
+```sql
+WHERE category = 'food' OR 1=1
+```
+
+This causes the database to return **all records**, ignoring the intended filter.
+
+---
+
+### 📬 Server Response
+
+* Additional items appeared in the response
+* Filtering behavior was bypassed
+* Lab status updated to **Solved**
+
+---
+
+### 🧠 Key Takeaways
+
+* SQL injection can exist in **GET parameters**, not just login forms
+* Burp Repeater helps compare normal vs injected responses
+* Behavioral differences in responses confirm SQLi
+
+---
+
+### 📚 Skills Practiced
+
+* Identifying injection points in URL parameters
+* Boolean logic manipulation
+* Reading application behavior instead of relying only on errors
+
+---
+
