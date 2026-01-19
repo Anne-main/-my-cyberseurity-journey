@@ -1,0 +1,7 @@
+Error-based SQL injection refers to cases where you're able to use error messages to either extract or infer sensitive data from the database, even in blind contexts. 
+You can modify the query so that it causes a database error only if the condition is true.
+ These inputs use the CASE keyword to test a condition and return a different expression depending on whether the expression is true:
+
+    With the first input, the CASE expression evaluates to 'a', which does not cause any error.
+    With the second input, it evaluates to 1/0, which causes a divide-by-zero error.
+ AND (SELECT CASE WHEN (Username = 'Administrator' AND SUBSTRING(Password, 1, 1) > 'm') THEN 1/0 ELSE 'a' END FROM Users)='a
